@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WB Bot Settings</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <style>
         :root {
             --bg-color: var(--tg-theme-bg-color, #ffffff);
@@ -15,7 +14,6 @@
             --button-text-color: var(--tg-theme-button-text-color, #ffffff);
             --secondary-bg: var(--tg-theme-secondary-bg-color, #f5f5f5);
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
@@ -24,33 +22,11 @@
             padding: 20px;
             box-sizing: border-box;
         }
-
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        h3 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        input[type="text"] {
+        .container { max-width: 400px; margin: 0 auto; }
+        h3 { margin-top: 0; margin-bottom: 20px; font-size: 20px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+        input[type="text"], select {
             width: 100%;
             padding: 12px;
             border: 1px solid rgba(0, 0, 0, 0.15);
@@ -60,103 +36,65 @@
             color: var(--text-color);
             font-size: 16px;
             outline: none;
-            transition: border-color 0.2s;
         }
-
-        input[type="text"]:focus {
-            border-color: var(--button-color);
-        }
-
-        .hint {
-            font-size: 12px;
-            color: var(--hint-color);
-            margin-top: 6px;
-        }
-
+        .hint { font-size: 12px; color: var(--hint-color); margin-top: 6px; }
         button {
-            width: 100%;
-            padding: 14px;
+            width: 100%; padding: 14px;
             background-color: var(--button-color);
             color: var(--button-text-color);
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        button:active {
-            opacity: 0.8;
-        }
-
-        .status-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            background: #e2e8f0;
-            color: #4a5568;
-            display: inline-block;
-            margin-bottom: 15px;
+            border: none; border-radius: 10px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h3>⚙️ WB Integration Settings</h3>
-        
-        <div id="status" class="status-badge">Connecting to Telegram...</div>
 
         <div class="form-group">
-            <label for="wb_token">API Token (Supplies / Поставки):</label>
+            <label for="wb_token">API Token (Supplies):</label>
             <input type="text" id="wb_token" placeholder="x64 token string...">
-            <div class="hint">The token remains on your secure server database.</div>
         </div>
 
-        <button id="save_btn" onclick="saveSettings()">Save Settings</button>
+        <div class="form-group">
+            <label for="period_days">Search drafts created within:</label>
+            <select id="period_days">
+                <option value="1" selected>Last 24 hours (1 day)</option>
+                <option value="2">Last 2 days</option>
+                <option value="3">Last 3 days</option>
+                <option value="5">Last 5 days</option>
+                <option value="7">Last 7 days</option>
+                <option value="14">Last 14 days</option>
+                <option value="30">Last 30 days</option>
+            </select>
+            <div class="hint">Filter active WB drafts by their creation timestamp.</div>
+        </div>
+
+        <button onclick="saveSettings()">Save Settings</button>
     </div>
 
     <script>
-        // Инициализируем объект WebApp
         const tg = window.Telegram.WebApp;
-
-        // Сообщаем Telegram, что приложение полностью загрузилось и готово к отрисовке
-        try {
-            tg.ready();
-            tg.expand(); // Раскрываем окно на максимум
-            
-            // Если объект WebApp существует, меняем статус
-            if (tg.initData) {
-                document.getElementById('status').innerText = "Telegram API: Connected";
-                document.getElementById('status').style.backgroundColor = "#d4edda";
-                document.getElementById('status').style.color = "#155724";
-            } else {
-                document.getElementById('status').innerText = "Opened outside Telegram Browser";
-            }
-        } catch (e) {
-            document.getElementById('status').innerText = "API Error: " + e.message;
-            document.getElementById('status').style.backgroundColor = "#f8d7da";
-            document.getElementById('status').style.color = "#721c24";
-        }
+        tg.ready();
+        tg.expand();
 
         function saveSettings() {
             const token = document.getElementById('wb_token').value.trim();
+            const period = document.getElementById('period_days').value;
+            
             if (!token) {
                 alert('Please enter your Wildberries API token.');
                 return;
             }
             
-            const data = { wb_token: token };
+            // Отправляем объект с токеном и периодом обратно боту
+            const data = { 
+                wb_token: token,
+                period_days: period
+            };
             
-            try {
-                // Отправляем JSON-строку обратно боту в чат
-                tg.sendData(JSON.stringify(data));
-                // Закрываем окно Web App вручную, если Telegram не закрыл его сам
-                tg.close();
-            } catch (err) {
-                alert("Failed to send data to bot: " + err.message);
-            }
+            tg.sendData(JSON.stringify(data));
+            tg.close();
         }
     </script>
 </body>
